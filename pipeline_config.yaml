@@ -1,0 +1,58 @@
+project:
+  title: "Sistema de dos etapas para control y mejora de calidad ecocardiografica"
+  clinical_use: false
+  note: "Prototipo academico; no es un dispositivo medico"
+
+data:
+  unit_of_partition: "patient_id"
+  unit_of_quality_label: "patient_view"
+  phases: ["ED", "ES"]
+  views: ["2CH", "4CH"]
+  quality_order:
+    Poor: 0
+    Medium: 1
+    Good: 2
+
+stage1_quality_gate:
+  binary_policy:
+    apt: ["Good", "Medium"]
+    not_apt: ["Poor"]
+  direct_apt_reference: ["Good"]
+  conditional_apt_reference: ["Medium"]
+  primary_model: "LogisticRegression"
+  sensitivity_model: "RandomForest"
+  outer_splits: 5
+  inner_splits: 4
+  min_sensitivity_not_apt: 0.90
+  review_margin: 0.10
+  feature_scope: "image_plus_mask"
+
+indicator_discovery:
+  alpha_fdr: 0.05
+  min_abs_spearman: 0.20
+  min_epsilon_squared: 0.03
+  n_bootstrap: 200
+  min_selection_frequency: 0.65
+  min_sign_consistency: 0.80
+  redundancy_abs_spearman: 0.90
+  max_indicators: 15
+
+stage2_processing:
+  apply_to_statuses: ["APTA_DIRECTA", "APTA_CONDICIONADA"]
+  deficiency_threshold: 0.75
+  max_candidates: 48
+  constraints:
+    ssim_min: 0.82
+    edge_f1_min: 0.70
+    texture_drift_max: 0.20
+    clipping_fraction_max: 0.20
+  objective_weights:
+    quality_gain: 0.50
+    contrast_gain: 0.15
+    noise_reduction: 0.15
+    dice_gain_proxy: 0.15
+    ssim_margin: 0.05
+    texture_penalty: 0.20
+  note: >-
+    Si se detecta foreshortening, anatomia incompleta o dropout severo, no se intenta
+    inventar informacion mediante filtros: se recomienda revision experta o repetir adquisicion.
