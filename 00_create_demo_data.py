@@ -1,5 +1,4 @@
 from __future__ import annotations
-#esto es un comentario
 import argparse
 from pathlib import Path
 
