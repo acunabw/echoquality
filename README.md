@@ -2,6 +2,8 @@
 
 > **A Two-Stage Pattern Recognition Framework for Echocardiographic Image Quality Assessment and Adaptive Image Processing**
 
+#comment
+
 ## Objetivo
 
 EchoQuality es un proyecto de investigación orientado a la evaluación automática de la calidad de imágenes ecocardiográficas y a la recomendación de estrategias de procesamiento adaptativo.
