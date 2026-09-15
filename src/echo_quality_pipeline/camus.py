@@ -77,19 +77,56 @@ def discover_cfg_files(root: str | Path) -> list[Path]:
     return sorted(found)
 
 
-def _find_image(patient_dir: Path, patient_id: str, view: str, phase: str, gt: bool = False) -> Path | None:
+def _find_image(
+    patient_dir: Path,
+    patient_id: str,
+    view: str,
+    phase: str,
+    gt: bool = False,
+) -> Path | None:
+
     gt_token = "_gt" if gt else ""
-    candidates: list[Path] = []
-    for ext in (".mhd", ".nii.gz", ".nii", ".png", ".tif", ".npy"):
-        patterns = [
-            f"{patient_id}_{view}_{phase}{gt_token}{ext}",
-            f"*{view}*{phase}*{gt_token}*{ext}",
-        ]
-        for pattern in patterns:
-            candidates.extend(patient_dir.glob(pattern))
-    # Evita seleccionar GT cuando se busca imagen y viceversa.
-    filtered = [p for p in candidates if ("_gt" in p.stem.lower()) == gt]
-    return sorted(set(filtered))[0] if filtered else None
+
+    extensions = (
+        ".mhd",
+        ".nii.gz",
+        ".nii",
+        ".png",
+        ".tif",
+        ".npy",
+    )
+
+    candidates = []
+
+    for ext in extensions:
+
+        # Nombre exacto esperado
+        exact = patient_dir / f"{patient_id}_{view}_{phase}{gt_token}{ext}"
+        if exact.exists():
+            candidates.append(exact)
+
+        # Búsqueda segura
+        for f in patient_dir.iterdir():
+            if not f.is_file():
+                continue
+
+            name = f.name.lower()
+
+            if (
+                view.lower() in name
+                and phase.lower() in name
+                and name.endswith(ext)
+            ):
+
+                if gt and "_gt" not in name:
+                    continue
+
+                if not gt and "_gt" in name:
+                    continue
+
+                candidates.append(f)
+
+    return sorted(set(candidates))[0] if candidates else None
 
 
 def build_manifest(camus_root: str | Path, phases: Iterable[str] = ("ED", "ES")) -> pd.DataFrame:
