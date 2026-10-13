@@ -1,0 +1,36 @@
+extends: ../base.yaml
+experiment:
+  name: smoke
+  seed: 2027
+dataset:
+  kind: synthetic
+  n_patients: 18
+  available_patients: 18
+  synthetic_root: data/synthetic/smoke
+  patient_order_file: data/patient_order_smoke_seed2027.txt
+  experiment_manifest: results/smoke/manifest.csv
+  image_size: 96
+output:
+  root: results/smoke
+features:
+  textural:
+    levels: 16
+    distances: [1]
+    angles_degrees: [0, 90]
+    enable_glrlm: true
+    enable_glszm: false
+    enable_gldm: false
+    enable_ngtdm: false
+indicator_discovery:
+  n_bootstrap: 5
+  top_k: 8
+recognition:
+  quality_gate:
+    models: [LogisticRegression]
+    outer_splits: 2
+    inner_splits: 2
+    fast: true
+processing:
+  enabled: true
+  max_cases: 1
+  max_candidates: 4

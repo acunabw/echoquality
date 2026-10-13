@@ -1,0 +1,93 @@
+project:
+  title: "EchoQuality 2.0 - Hierarchical Pattern Recognition"
+  clinical_use: false
+  note: "Academic prototype; not a medical device and not for clinical decisions."
+
+experiment:
+  name: base
+  seed: 2026
+
+dataset:
+  kind: camus
+  camus_root: "${CAMUS_ROOT}"
+  master_manifest: data/camus_manifest_all.csv
+  patient_order_file: data/patient_order_camus_seed2026.txt
+  n_patients: 500
+  experiment_manifest: results/base/manifest.csv
+
+output:
+  root: results/base
+
+features:
+  fail_on_error: true
+  temporal_aggregation: [mean, abs_delta]
+  global:
+    histogram_bins: 64
+    local_window: 7
+    edge_sigma: 1.0
+    highpass_sigma: 1.0
+    dropout_floor: 0.04
+    saturation_low: 0.01
+    saturation_high: 0.99
+  anatomical:
+    connectivity: 2
+    border_width: 1
+  border:
+    boundary_radius: 2
+    continuity_percentile: 50.0
+  textural:
+    levels: 32
+    distances: [1, 2]
+    angles_degrees: [0, 45, 90, 135]
+    lbp_points: 8
+    lbp_radius: 1.0
+    lbp_method: uniform
+    dropout_floor: 0.05
+    enable_glrlm: true
+    enable_glszm: true
+    enable_gldm: true
+    enable_ngtdm: true
+    gldm_delta: 1
+    gldm_alpha: 0
+    ngtdm_delta: 1
+
+indicator_discovery:
+  n_bootstrap: 200
+  top_k: 15
+  min_selection_frequency: 0.65
+  min_sign_consistency: 0.80
+  redundancy_abs_spearman: 0.90
+  note: >-
+    Exploratory only. The resulting list is not supplied to nested CV; supervised
+    feature selection is fitted separately inside each training fold.
+
+recognition:
+  quality_gate:
+    architecture: hierarchical_late_fusion
+    models: [LogisticRegression, RandomForest]
+    outer_splits: 5
+    inner_splits: 4
+    min_sensitivity_not_apt: 0.90
+    fast: false
+  diagnostics:
+    top_n: 5
+    conditional_margin: 0.15
+
+processing:
+  enabled: true
+  apply_to_statuses: [APTA_CONDICIONADA]
+  max_cases: 12
+  max_candidates: 48
+  min_objective_improvement: 0.02
+  constraints:
+    ssim_min: 0.82
+    edge_f1_min: 0.70
+    anatomical_drift_max: 0.15
+    texture_drift_max: 0.20
+    clipping_fraction_max: 0.20
+  objective_weights:
+    global_gain: 0.35
+    anatomical_preservation: 0.35
+    textural_gain_and_preservation: 0.30
+    ssim_bonus: 0.05
+    invalid_penalty: 1.0

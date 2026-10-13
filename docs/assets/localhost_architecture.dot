@@ -1,0 +1,29 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="white", pad=0.25, nodesep=0.45, ranksep=0.5, fontname="DejaVu Sans", label="Arquitectura del localhost EchoQuality 2.0", labelloc=t, fontsize=22];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, margin="0.16,0.10", color="#BCCCDC", penwidth=1.4];
+  edge [color="#486581", penwidth=1.4, arrowsize=0.75, fontname="DejaVu Sans", fontsize=9];
+
+  browser [label="Navegador local\nhttp://127.0.0.1:8501", fillcolor="#E6F6FF", color="#2F80ED"];
+  streamlit [label="Streamlit\ninterfaz, carga de archivos y control de sesion", fillcolor="#F3E8FF", color="#7C3AED"];
+
+  subgraph cluster_sources {
+    label="Fuentes locales";
+    color="#B8D8F8";
+    style="rounded";
+    camus [shape=cylinder, label="Base CAMUS\nimagenes + mascaras + manifest", fillcolor="#E8F1FB", color="#2F80ED"];
+    artifacts [shape=folder, label="Experimento entrenado\nGate + Good References + YAML", fillcolor="#F4ECF7", color="#7C3AED"];
+  }
+
+  service [label="Servicio de inferencia\nconstruye el caso ED/ES", fillcolor="#E9F7EF", color="#229954"];
+  extractor [label="Extraccion jerarquica\nGlobal | Anatomica | Textural", fillcolor="#E9F7EF", color="#229954"];
+  gate [label="Quality Gate jerarquico\nmodelos G/M/T + meta-clasificador", fillcolor="#FFF3E0", color="#F2994A"];
+  diagnosis [label="Diagnostico por nivel\nGood Reference + Mahalanobis", fillcolor="#FFF3E0", color="#F2994A"];
+  optimizer [label="Procesamiento adaptativo\nJ_G + J_M + J_T + restricciones", fillcolor="#FCE8EC", color="#D64562"];
+  output [label="Salida\nAPTA / APTA CONDICIONADA / NO APTA\nscores, desviaciones y recomendacion", fillcolor="#E6F6FF", color="#2F80ED"];
+
+  browser -> streamlit -> service -> extractor -> gate -> diagnosis -> optimizer -> output;
+  camus -> service [label="caso y fase complementaria"];
+  artifacts -> extractor [label="configuracion"];
+  artifacts -> gate [label="modelos"];
+  artifacts -> diagnosis [label="referencias"];
+}

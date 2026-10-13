@@ -1,0 +1,14 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="white", pad=0.25, nodesep=0.45, ranksep=0.7, fontname="DejaVu Sans", label="Flujo de desarrollo con VS Code y GitHub Desktop", labelloc=t, fontsize=22];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, margin="0.16,0.10", penwidth=1.4];
+  edge [color="#486581", penwidth=1.4, arrowsize=0.75];
+  branch [label="Crear rama\nfeature/localhost-streamlit", fillcolor="#E6F6FF", color="#2F80ED"];
+  edit [label="VS Code\nEditar codigo, YAML y documentacion", fillcolor="#F3E8FF", color="#7C3AED"];
+  test [label="Anaconda Prompt\npytest + smoke + validacion localhost", fillcolor="#E9F7EF", color="#229954"];
+  review [label="GitHub Desktop\nRevisar diff y excluir resultados", fillcolor="#FFF3E0", color="#F2994A"];
+  commit [label="Commit descriptivo", fillcolor="#FCE8EC", color="#D64562"];
+  push [label="Push origin\nrespaldo remoto", fillcolor="#E6F6FF", color="#2F80ED"];
+  pull [label="Mac u otro equipo\nFetch / Pull", fillcolor="#E9F7EF", color="#229954"];
+  branch -> edit -> test -> review -> commit -> push -> pull;
+  pull -> edit [label="nuevo ciclo", style=dashed];
+}

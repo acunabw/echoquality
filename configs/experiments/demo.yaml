@@ -1,0 +1,23 @@
+extends: ../base.yaml
+experiment:
+  name: demo
+  seed: 2026
+dataset:
+  kind: synthetic
+  n_patients: 30
+  available_patients: 30
+  synthetic_root: data/synthetic/demo
+  patient_order_file: data/patient_order_demo_seed2026.txt
+  experiment_manifest: results/demo/manifest.csv
+output:
+  root: results/demo
+indicator_discovery:
+  n_bootstrap: 30
+recognition:
+  quality_gate:
+    outer_splits: 3
+    inner_splits: 2
+    fast: true
+processing:
+  max_cases: 2
+  max_candidates: 10

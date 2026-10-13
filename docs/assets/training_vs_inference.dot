@@ -1,0 +1,24 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="white", pad=0.2, nodesep=0.35, ranksep=0.45, fontname="DejaVu Sans", label="Separacion entre entrenamiento e inferencia", labelloc=t, fontsize=22];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, margin="0.16,0.10", color="#BCCCDC", penwidth=1.4];
+  edge [color="#486581", penwidth=1.4, arrowsize=0.75, fontname="DejaVu Sans", fontsize=9];
+
+  train [label="ENTRENAMIENTO OFFLINE (orquestador)", fillcolor="#D9EAF7", color="#2F80ED", fontsize=13];
+  data [label="CAMUS + etiquetas\nGood / Medium / Poor", fillcolor="#E6F6FF", color="#2F80ED"];
+  cv [label="Nested CV por paciente\nseleccion dentro del fold", fillcolor="#E9F7EF", color="#229954"];
+  fit [label="Modelos G/M/T + meta-modelo\nGood References", fillcolor="#FFF3E0", color="#F2994A"];
+  artifacts [shape=folder, label="ARTEFACTOS DEL EXPERIMENTO\nGate + referencias + YAML + metricas", fillcolor="#F4ECF7", color="#7C3AED", fontsize=12];
+  infer [label="INFERENCIA ONLINE LOCAL", fillcolor="#DFF7E5", color="#229954", fontsize=13];
+  case [label="Nuevo caso\nED + ES + mascaras", fillcolor="#E6F6FF", color="#2F80ED"];
+  load [label="Cargar artefactos\n(no reentrenar)", fillcolor="#F3E8FF", color="#7C3AED"];
+  predict [label="Extraer -> fusionar -> diagnosticar", fillcolor="#FFF3E0", color="#F2994A"];
+  result [label="Resultado + procesamiento adaptativo", fillcolor="#E9F7EF", color="#229954"];
+
+  train -> data -> cv -> fit -> artifacts;
+  artifacts -> infer;
+  infer -> case;
+  infer -> load;
+  case -> predict;
+  load -> predict;
+  predict -> result;
+}

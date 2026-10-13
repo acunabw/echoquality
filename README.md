@@ -1,463 +1,311 @@
-# EchoQuality
+# EchoQuality 2.0
 
-> **A Two-Stage Pattern Recognition Framework for Echocardiographic Image Quality Assessment and Adaptive Image Processing**
+> **Arquitectura jerárquica de reconocimiento de patrones para evaluación de calidad ecocardiográfica y procesamiento adaptativo.**
 
-#comment
-
-## Objetivo
-
-EchoQuality es un proyecto de investigación orientado a la evaluación automática de la calidad de imágenes ecocardiográficas y a la recomendación de estrategias de procesamiento adaptativo.
-
-El pipeline tiene tres objetivos principales:
-
-1. Determinar si una imagen supera o no el **Quality Gate** para análisis computacional.
-2. Para las imágenes aceptadas, identificar qué indicadores se desvían del patrón de referencia **Good**.
-3. Recomendar y evaluar filtros, transformaciones y parámetros de procesamiento para acercar la imagen al comportamiento Good sin deteriorar la morfología cardíaca ni la textura miocárdica.
+EchoQuality 2.0 es una reconstrucción independiente del prototipo 1.x. Separa la representación de cada imagen en tres niveles —**global, anatómico y textural**—, aprende una evidencia de calidad en cada nivel y combina esas evidencias mediante **fusión tardía**.
 
 > Prototipo académico. No es un dispositivo médico y no debe utilizarse para decisiones clínicas.
 
----
-
-## Arquitectura científica
+## Arquitectura
 
 ```text
-Imagen ecocardiográfica original
-
-        ↓
-
-Extracción de características
-Intensidad · Textura · Nitidez · Ruido · Morfología
-
-        ↓
-
-ETAPA 1
-Quality Gate binario
-
-        ↓
-
-APTA / NO APTA
-
-        ↓
-
-Para imágenes aceptadas:
-estado operativo APTA o APTA CONDICIONADA
-
-        ↓
-
-ETAPA 2
-Good Reference
-
-        ↓
-
-Análisis de desviaciones
-
-        ↓
-
-Diagnóstico de indicadores
-
-        ↓
-
-Procesamiento adaptativo
-
-        ↓
-
-Evaluación multiobjetivo
-
-        ↓
-
-Imagen recomendada
-
-        ↓
-
-Radiomics / análisis downstream
+                              Imagen
+                                 │
+             ┌───────────────────┼───────────────────┐
+             ▼                   ▼                   ▼
+      Representación       Representación       Representación
+         global              anatómica             textural
+             │                   │                   │
+             ▼                   ▼                   ▼
+        Clasificador G      Clasificador M      Clasificador T
+             │                   │                   │
+             └──────────────┬────┴────┬──────────────┘
+                            ▼         
+                    Fusión tardía / meta-modelo
+                            │
+                    APTA / NO APTA
+                            │
+                    Diagnóstico por nivel
+                            │
+                  Procesamiento condicionado
+                            │
+             J = J_G + J_M + J_T con restricciones
 ```
 
----
+El proyecto conserva los métodos solicitados:
 
-## Política de calidad
+- Logistic Regression;
+- Random Forest;
+- bootstrap por paciente para análisis exploratorio;
+- nested cross-validation agrupada por `patient_id`.
 
-CAMUS proporciona la variable `ImageQuality` en los archivos:
+La diferencia principal es que la selección supervisada usada para estimar rendimiento se ajusta **dentro de cada fold**, evitando que el análisis exploratorio global contamine la validación.
 
-```text
-Info_2CH.cfg
-Info_4CH.cfg
-```
+## Cambios metodológicos principales
 
-con tres categorías:
+1. **Representaciones independientes:** `global__*`, `anatomical__*` y `textural__*`.
+2. **Textura sólo en miocardio:** GLCM, GLRLM, GLSZM, GLDM, NGTDM y LBP usan la ROI MYO.
+3. **GLCM enmascarada:** sólo se cuentan pares en los que ambos píxeles pertenecen a la ROI.
+4. **Agregación temporal explícita:** `__mean` y `__abs_delta`; ya no se oculta que la antigua tabla por vista era la media ED/ES.
+5. **Terminología corregida:** `robust_intensity_range_p95_p05` no se presenta como rango dinámico físico.
+6. **ASM/Energy documentados:** `glcm_asm_uniformity = ΣP²`; `glcm_energy_sqrt_asm = √ASM`.
+7. **Good Reference por nivel y vista:** mediana, MAD, percentiles y covarianza regularizada.
+8. **Procesamiento condicionado:** no se aplica CLAHE, denoising o sharpening indiscriminadamente.
+9. **Subconjuntos reproducibles y anidados:** orden CAMUS aleatorio con semilla y archivo exclusivo del dataset; los demos sintéticos usan archivos de orden separados.
+10. **Artefactos por experimento:** ningún modelo de CAMUS10 sobrescribe el de CAMUS500.
 
-```text
-Good
-Medium
-Poor
-```
-
-La política operativa actual de EchoQuality es:
-
-| CAMUS | Estado operativo |
-|---|---|
-| Good | APTA |
-| Medium | APTA CONDICIONADA |
-| Poor | NO APTA |
-
-El modelo de la Etapa 1 es actualmente binario. Se utiliza `Poor = 1` como clase positiva para priorizar la detección de imágenes que no deberían continuar hacia análisis posteriores.
-
-`APTA CONDICIONADA` no representa una tercera clase aprendida por el clasificador, sino un estado operativo asignado a imágenes aceptadas que presentan desviaciones respecto al patrón Good y que pueden ser candidatas a procesamiento controlado.
-
----
-
-## Estructura del repositorio
+## Estructura
 
 ```text
-echoquality/
-│
+echoquality-v2/
 ├── app/
+├── configs/
+│   ├── base.yaml
+│   └── experiments/
+│       ├── demo.yaml
+│       ├── camus10.yaml
+│       ├── camus50.yaml
+│       ├── camus100.yaml
+│       ├── camus250.yaml
+│       └── camus500.yaml
 ├── data/
 ├── docs/
-├── models/
 ├── notebooks/
 ├── results/
 ├── scripts/
-├── src/
-│   └── echo_quality_pipeline/
+├── src/echoquality/
+│   ├── analysis/
+│   ├── data/
+│   ├── experiments/
+│   ├── optimization/
+│   ├── processing/
+│   ├── recognition/
+│   └── reporting/
 ├── tests/
-│
-├── .gitignore
-├── LICENSE
-├── README.md
-├── pipeline_config.yaml
+├── environment.yml
 ├── pyproject.toml
 ├── requirements.txt
-├── run_streamlit.py
-├── streamlit_app.py
-├── test_pipeline.py
-└── tk_demo.py
+└── run_experiment.py
 ```
 
----
+## Instalación en Windows con Conda
 
-## Instalación
+Desde Anaconda Prompt:
 
-El proyecto se utiliza actualmente con Conda.
-
-Activar el entorno:
-
-```powershell
-conda activate pattern-recognition
-```
-
-Instalar dependencias:
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-Instalar EchoQuality en modo editable:
-
-```powershell
+```bat
+cd "C:\Users\TU_USUARIO\Documents\Github desktop\echoquality-v2"
+conda env create -f environment.yml
+conda activate echoquality-v2
 python -m pip install -e .
 ```
 
-Verificar la instalación:
+Para conservar tu entorno existente también puedes usar:
 
-```powershell
-python -c "import echo_quality_pipeline; print(echo_quality_pipeline.__file__)"
+```bat
+conda activate pattern-recognition
+python -m pip install -r requirements.txt
+python -m pip install -e .
 ```
 
----
+Verificación:
 
-## Demo reproducible
-
-El proyecto incluye un flujo de demostración con imágenes sintéticas.
-
-```powershell
-python scripts\09_run_all_demo.py
+```bat
+python -c "import echoquality; print(echoquality.__version__)"
 ```
 
-Interfaces disponibles:
+Para usar la interfaz Streamlit:
 
-```powershell
-python tk_demo.py
-```
-
-o:
-
-```powershell
+```bat
+python -m pip install -e ".[app]"
 python run_streamlit.py
 ```
 
-Los datos sintéticos sirven únicamente para validar el funcionamiento técnico del pipeline y no deben interpretarse como resultados científicos de CAMUS.
+## Configurar CAMUS
 
----
+En Anaconda Prompt (`cmd.exe`):
 
-## Ejecución con CAMUS
+```bat
+set CAMUS_ROOT=C:\Users\acunabw\CAMUS_Texture_Project\data\raw\CAMUS\database_nifti
+```
 
-### 1. Construir el manifiesto
+En PowerShell:
 
 ```powershell
-python scripts\01_build_camus_manifest.py --camus-root "C:\Ruta\CAMUS\database_nifti" --output data\camus_manifest_all.csv
+$env:CAMUS_ROOT = "C:\Users\acunabw\CAMUS_Texture_Project\data\raw\CAMUS\database_nifti"
 ```
 
-El manifiesto funciona como índice estructurado del dataset y contiene información como:
+El dataset no se copia al repositorio.
+
+## Ejecutar el pipeline completo
+
+### Prueba sintética rápida
+
+```bat
+python run_experiment.py --config configs\experiments\demo.yaml --fast
+```
+
+### CAMUS10
+
+```bat
+python run_experiment.py --config configs\experiments\camus10.yaml
+```
+
+### CAMUS500
+
+```bat
+python run_experiment.py --config configs\experiments\camus500.yaml
+```
+
+El orquestador ejecuta:
 
 ```text
-patient_id
-view
-phase
-quality
-apt_target
-image_path
-mask_path
-cfg_path
+manifest
+→ features jerárquicas
+→ auditoría
+→ indicadores exploratorios
+→ Quality Gate jerárquico con nested CV
+→ Good References
+→ diagnóstico por nivel
+→ procesamiento adaptativo
+→ reporte
 ```
 
----
+Los estados se guardan en `results/<experimento>/experiment_state.json`. Si la ejecución se interrumpe, vuelve a lanzar el mismo comando y continuará desde el último stage completado.
 
-### 2. Extraer características
+Para rehacer todo:
 
-```powershell
-python scripts\02_extract_features.py --manifest data\camus_manifest_all.csv
+```bat
+python run_experiment.py --config configs\experiments\camus100.yaml --force
 ```
 
-El script extrae indicadores relacionados con:
+Para ejecutar únicamente una etapa y sus dependencias:
+
+```bat
+python -m echoquality run --config configs\experiments\camus100.yaml --stages gate
+```
+
+## Salidas por experimento
 
 ```text
-intensidad
-textura
-nitidez
-ruido
-morfología
+results/camus100/
+├── manifest.csv
+├── features/
+│   ├── frame_features.csv
+│   ├── view_features.csv
+│   └── feature_catalog.csv
+├── indicator_analysis/
+│   ├── global/
+│   ├── anatomical/
+│   └── textural/
+├── quality_gate/
+│   ├── hierarchical_quality_gate.joblib
+│   ├── model_summary.csv
+│   ├── fold_metrics.csv
+│   ├── oof_predictions.csv
+│   ├── selected_features_by_fold.csv
+│   ├── roc_quality_gate.png
+│   ├── confusion_quality_gate.png
+│   └── level_scores.png
+├── references/
+├── diagnostics/
+├── adaptive_processing/
+└── reports/
 ```
 
----
+## Nota sobre indicadores exploratorios
 
-### 3. Analizar indicadores
+Los CSV de `indicator_analysis` sirven para interpretar asociaciones, estabilidad y redundancia. **No se suministran como lista fija a la validación del clasificador.** Cada modelo selecciona sus variables dentro del entrenamiento de cada fold de nested CV.
 
-```powershell
-python scripts\03_analyze_indicators.py
+## Comparar experimentos
+
+```bat
+python compare_experiments.py ^
+  results\camus10\reports\experiment_summary.json ^
+  results\camus50\reports\experiment_summary.json ^
+  results\camus100\reports\experiment_summary.json ^
+  results\camus250\reports\experiment_summary.json ^
+  results\camus500\reports\experiment_summary.json ^
+  --output results\learning_curve_summary.csv
 ```
 
----
+## Documentación
 
-### 4. Entrenar el Quality Gate
+- `docs/AUDIT_V1_CODE_AND_RESULTS.md`: auditoría del código y resultados adjuntos.
+- `docs/IMPLEMENTATION_SUMMARY.md`: correspondencia entre requisitos y módulos implementados.
+- `docs/ARCHITECTURE.md`: decisiones técnicas de la versión 2.0.
+- `docs/FEATURE_PROTOCOL.md`: definiciones, parámetros y nomenclatura.
+- `docs/EXPERIMENT_PLAN.md`: experimentos propuestos para la tesis.
+- `docs/VSCODE_GITHUB_WORKFLOW.md`: flujo exacto de implementación y publicación.
+- `docs/MIGRATION_V1_TO_V2.md`: cómo conservar 1.x y crear el repositorio nuevo.
 
-```powershell
-python scripts\04_train_quality_gate.py
-```
 
----
+## Localhost para analizar casos
 
-### 5. Construir el Good Reference
-
-```powershell
-python scripts\05_build_good_reference.py
-```
-
----
-
-### 6. Optimizar el procesamiento
-
-```powershell
-python scripts\06_optimize_processing.py
-```
-
----
-
-### 7. Evaluar el pipeline completo
-
-```powershell
-python scripts\07_evaluate_end_to_end.py
-```
-
----
-
-## Etapa 1: Quality Gate
-
-La primera etapa utiliza reconocimiento de patrones para determinar si una imagen es apta para continuar hacia análisis computacional.
-
-Principios metodológicos:
-
-- división de datos a nivel de paciente;
-- evitar que imágenes del mismo paciente aparezcan simultáneamente en entrenamiento y prueba;
-- agregación ED/ES cuando corresponda;
-- selección de características dentro del proceso de validación;
-- evaluación con métricas como ROC AUC, Balanced Accuracy, sensibilidad y especificidad.
-
-Los modelos considerados incluyen:
+La interfaz local usa Streamlit y se ejecuta solamente en:
 
 ```text
-Logistic Regression
-Random Forest
+http://127.0.0.1:8501
 ```
 
-La salida principal es una probabilidad de `NO APTA` y una decisión asociada a un umbral operativo.
+El localhost separa dos procesos:
 
----
+1. **Entrenamiento offline:** el orquestador genera el Quality Gate jerarquico y los Good References a partir de CAMUS.
+2. **Inferencia local:** la app carga esos artefactos y analiza un caso sin reentrenar el modelo por cada imagen.
 
-## Etapa 2: Good Reference y procesamiento adaptativo
+### Requisito para el algoritmo completo
 
-El patrón Good se construye a partir de imágenes clasificadas como `Good` dentro del conjunto de entrenamiento.
-
-La referencia puede incluir:
-
-- mediana;
-- MAD;
-- intervalos robustos;
-- covarianza regularizada;
-- distribución de indicadores seleccionados.
-
-Para cada imagen aceptada se calculan desviaciones respecto al patrón Good.
-
-Entre los análisis posibles se incluyen:
+El Quality Gate actual opera a nivel paciente-vista y fue entrenado con agregacion temporal `mean + abs_delta`. Por ello, el analisis completo necesita:
 
 ```text
-z robusto
-distancia de Mahalanobis
-desviaciones por indicador
-problemas dominantes
+ED + mascara ED
+ES + mascara ES
 ```
 
-Los problemas pueden agruparse en categorías como:
+Las mascaras deben seguir la codificacion CAMUS:
 
 ```text
-contraste
-ruido / speckle
-nitidez
-rango dinámico
-dropout
-morfología
+1 = LV
+2 = MYO
+3 = LA
 ```
 
----
+La app tambien ofrece un modo de una sola imagen. Ese modo extrae patrones y compara el frame con el Good Reference, pero no emite la decision final del Quality Gate porque falta la segunda fase.
 
-## Procesamiento adaptativo
+### Preparar un runtime de demostracion
 
-Según el diagnóstico de calidad, EchoQuality puede evaluar transformaciones como:
-
-- CLAHE;
-- corrección gamma;
-- estiramiento de histograma;
-- filtro de mediana;
-- filtro bilateral;
-- difusión anisotrópica;
-- unsharp masking.
-
-La selección del procesamiento se plantea como un problema multiobjetivo.
-
-La mejora debe acercar los indicadores al patrón Good sin degradar:
-
-- morfología;
-- bordes;
-- textura;
-- similitud estructural.
-
----
-
-## Interpretación de Dice
-
-El demo puede utilizar un segmentador proxy para ilustrar la medición de Dice antes y después del procesamiento.
-
-En la investigación de tesis, Dice debe calcularse utilizando una red de segmentación validada.
-
-Dice representa una métrica de utilidad downstream y no constituye la etiqueta de calidad del Quality Gate.
-
----
-
-## Resultados experimentales
-
-Los resultados se organizan por tamaño del experimento:
-
-```text
-results/
-├── camus10/
-├── camus50/
-├── camus100/
-├── camus250/
-└── camus500/
+```bat
+conda activate echoquality-v2
+python run_experiment.py --config configs\experiments\smoke.yaml --force --fast
+python scripts\13_validate_localhost.py --experiment-root results\smoke --config configs\experiments\smoke.yaml
 ```
 
-Esta organización permite evaluar la estabilidad del pipeline al aumentar progresivamente el número de pacientes.
+### Iniciar el servidor local
 
----
-
-## Salidas principales
-
-Dependiendo del experimento, el pipeline puede generar:
-
-```text
-frame_features.csv
-view_features.csv
-indicator_deviations.csv
-issue_summary.csv
-candidate_scores.png
-before_after.png
-original.png
-recommended.png
-optimization_summary.json
+```bat
+python run_streamlit.py
 ```
 
-Además de:
+Alternativamente:
 
-```text
-modelos entrenados
-Good Reference
-métricas del Quality Gate
-reportes de optimización
-figuras
-resultados end-to-end
+```bat
+start_localhost.bat
 ```
 
----
+La interfaz permite:
 
-## Buenas prácticas experimentales
+- seleccionar un paciente-vista desde el manifest CAMUS;
+- reemplazar una fase de CAMUS por una imagen cargada;
+- cargar manualmente ED, ES y sus mascaras;
+- ejecutar un analisis exploratorio de una sola imagen;
+- visualizar Score G, Score M y Score T;
+- obtener el estado APTA, APTA CONDICIONADA o NO APTA;
+- revisar desviaciones frente al Good Reference;
+- evaluar procesamiento adaptativo condicionado al diagnostico;
+- descargar y guardar el reporte de cada caso;
+- ejecutar el orquestador desde un YAML.
 
-- No dividir imágenes del mismo paciente entre entrenamiento y prueba.
-- No seleccionar características utilizando todo el conjunto antes de validar.
-- No ajustar hiperparámetros utilizando el holdout final.
-- No optimizar filtros sobre el conjunto final de evaluación.
-- No interpretar una imagen visualmente más suave como necesariamente mejor para radiomics.
-- Preservar morfología y textura durante el procesamiento.
-- No intentar reconstruir digitalmente anatomía ausente.
-- No considerar el realce como solución para foreshortening o dropout severo.
-- Mantener separados los datos sintéticos de los resultados científicos obtenidos con CAMUS.
-
----
-
-## Dataset
-
-La implementación actual utiliza el dataset público CAMUS como base para los experimentos.
-
-Los datos originales no se almacenan en este repositorio.
-
-GitHub contiene únicamente:
-
-```text
-código
-configuración
-scripts
-documentación
-estructura experimental
-```
-
----
-
-## Estado del proyecto
-
-Actualmente EchoQuality dispone de:
-
-- estructura Python basada en `src/`;
-- instalación mediante `pyproject.toml`;
-- integración con CAMUS;
-- lectura de imágenes NIfTI;
-- extracción de características;
-- análisis de indicadores;
-- Quality Gate;
-- Good Reference;
-- procesamiento adaptativo;
-- evaluación end-to-end;
-- estructura para experimentos CAMUS10, CAMUS50, CAMUS100, CAMUS250 y CAMUS500.
-
----
+Consulta `docs/LOCALHOST_SETUP.md` y `docs/LOCALHOST_THEORY.pdf` para el procedimiento completo y la defensa teorica.
 
 ## Licencia
 
-MIT License
+MIT.

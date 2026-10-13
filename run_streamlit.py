@@ -4,5 +4,19 @@ import subprocess
 import sys
 from pathlib import Path
 
-root = Path(__file__).resolve().parents[1]
-subprocess.run([sys.executable, "-m", "streamlit", "run", str(root / "app" / "streamlit_app.py")], check=True)
+
+if __name__ == "__main__":
+    project_root = Path(__file__).resolve().parent
+    app = project_root / "app" / "streamlit_app.py"
+    command = [
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(app),
+        "--server.address",
+        "127.0.0.1",
+        "--server.port",
+        "8501",
+    ]
+    raise SystemExit(subprocess.call(command, cwd=project_root))

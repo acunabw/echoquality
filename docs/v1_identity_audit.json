@@ -1,0 +1,7 @@
+{
+  "view_features_max_abs_error_vs_ED_ES_mean": 1.4210854715202004e-14,
+  "dynamic_range_identity_max_abs_error": 2.220446049250313e-16,
+  "speckle_identity_max_abs_error": 4.216036819659763e-08,
+  "mask_fraction_identity_max_abs_error": 2.7755575615628914e-16,
+  "glcm_energy_squared_asm_max_abs_error": 7.974456136095043e-05
+}

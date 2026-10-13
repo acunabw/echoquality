@@ -1,0 +1,59 @@
+ECHOQUALITY 2.0.1 - HOTFIX DEL QUALITY GATE
+Actualizacion local para Windows - Octubre de 2026
+
+PROBLEMA CORREGIDO
+- GridSearchCV y stacking fallaban cuando StratifiedGroupKFold generaba
+  conjuntos de entrenamiento con una sola clase.
+- La funcion safe_group_splits estimaba el numero de folds pero no verificaba
+  las etiquetas reales de cada particion.
+- support.py dependia de una variante de remove_small_objects incompatible
+  con algunas instalaciones de scikit-image.
+
+CAMBIOS
+- models.py: validated_group_folds busca particiones reproducibles por
+  paciente, exigiendo clases 0/1 en train y validation. Si no es posible,
+  emite un error explicativo, sin mezclar pacientes ni duplicar ejemplos.
+- fusion.py: usa esas particiones en GridSearchCV y en OOF de niveles/meta.
+- hierarchical_gate.py: usa esas particiones en la CV externa.
+- support.py: filtra componentes conectados por area sin depender del nombre
+  de parametro min_size/max_size de scikit-image.
+- tests/test_group_cv_safety.py: 3 pruebas de regresion adicionales.
+
+INSTALACION RECOMENDADA
+1. Detener Streamlit en la terminal con Ctrl+C.
+2. Verificar que existe una copia de seguridad del repositorio echoquality.
+3. Descomprimir el ZIP de hotfix en una carpeta temporal.
+4. Copiar SOLO las carpetas src y tests de este hotfix a la raiz
+   del repositorio echoquality, combinando carpetas y reemplazando
+   los CINCO archivos identificados arriba (no otros).
+5. Nunca reemplazar .git, data/, models/, results/ ni artifacts/.
+6. En la terminal de VS Code, desde la raiz del repositorio, ejecutar:
+   python -m pytest -q
+7. Ejecutar la prueba desde el navegador con configs/experiments/smoke.yaml,
+   Fast marcado, Reanudar marcado y Forzar repeticion desmarcado.
+   O desde la terminal:
+   python run_experiment.py --config configs/experiments/smoke.yaml --fast
+8. Cuando el experimento termine, abrir Streamlit nuevamente:
+   python run_streamlit.py
+   En la barra lateral indicar results/smoke y configs/experiments/smoke.yaml,
+   pulsar Recargar modelos y referencias.
+
+VALIDACION REALIZADA EN ENTORNO DE PRUEBA
+- 12/12 pruebas pytest aprobadas.
+- Smoke sintetico completo (18 pacientes, 72 frames, 8 etapas), ejecutado
+  de nuevo desde cero: codigo de salida 0.
+- Se genero y cargo el modelo y las referencias del experimento, y se
+  analizo satisfactoriamente un caso ED/ES sintetico con la inferencia.
+- Sintaxis de 81 archivos Python verificada.
+
+LIMITACIONES
+- No constituye validacion cientifica ni clinica de CAMUS.
+- La metodologia OOF de stacking utiliza hiperparametros seleccionados
+  sobre el conjunto de entrenamiento externo completo; la evaluacion del
+  fold externo permanece independiente, pero los scores internos y el
+  umbral pueden ser optimistas. Se recomienda fortalecer cross-fitting
+  y evaluar calibracion antes de extraer conclusiones cientificas.
+- No se verifico una ejecucion real de CAMUS500 ni el entorno Windows del usuario.
+- La advertencia de Streamlit sobre use_container_width no impide ejecutar.
+- No compartir artefactos joblib obtenidos de terceros no confiables:
+  su carga puede ejecutar codigo Python.

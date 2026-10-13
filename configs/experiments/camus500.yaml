@@ -1,0 +1,9 @@
+extends: ../base.yaml
+experiment:
+  name: camus500
+  seed: 2026
+dataset:
+  n_patients: 500
+  experiment_manifest: results/camus500/manifest.csv
+output:
+  root: results/camus500

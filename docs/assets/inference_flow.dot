@@ -1,0 +1,27 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="white", pad=0.2, nodesep=0.35, ranksep=0.45, fontname="DejaVu Sans", label="Flujo de analisis de un caso", labelloc=t, fontsize=22];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, margin="0.16,0.10", color="#BCCCDC", penwidth=1.4];
+  edge [color="#486581", penwidth=1.4, arrowsize=0.75, fontname="DejaVu Sans", fontsize=9];
+
+  input [label="Entrada completa\nED + mascara ED\nES + mascara ES", fillcolor="#E6F6FF", color="#2F80ED"];
+  g [label="Nivel Global\nintensidad, contraste, ruido, bordes", fillcolor="#E6F6FF", color="#2F80ED"];
+  m [label="Nivel Anatomico\nLV, MYO, LA, forma, espesor, CNR", fillcolor="#E9F7EF", color="#229954"];
+  t [label="Nivel Textural\nMYO: GLCM, GLRLM, GLSZM, GLDM, NGTDM, LBP", fillcolor="#F3E8FF", color="#7C3AED"];
+  agg [label="Agregacion temporal\nmean + abs_delta (ED/ES)", fillcolor="#FFF3E0", color="#F2994A"];
+  levels [label="Tres clasificadores\nScore G | Score M | Score T", fillcolor="#FFF3E0", color="#F2994A"];
+  meta [label="Meta-clasificador\nFusion tardia", fillcolor="#FCE8EC", color="#D64562"];
+  decision [label="Decision operacional\nAPTA | APTA CONDICIONADA | NO APTA", fillcolor="#E6F6FF", color="#2F80ED"];
+  ref [label="Good References por nivel\nmediana, MAD, P10-P90, Mahalanobis", fillcolor="#E9F7EF", color="#229954"];
+  diag [label="Diagnostico\nnivel y problema dominante", fillcolor="#FFF3E0", color="#F2994A"];
+  proc [label="Optimizacion condicionada\noriginal como control + candidatos validos", fillcolor="#F3E8FF", color="#7C3AED"];
+
+  input -> g;
+  input -> m;
+  input -> t;
+  g -> agg;
+  m -> agg;
+  t -> agg;
+  agg -> levels -> meta -> decision -> diag -> proc;
+  ref -> diag;
+  ref -> proc;
+}
